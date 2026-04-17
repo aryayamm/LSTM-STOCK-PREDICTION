@@ -1,11 +1,10 @@
 import yfinance as yf
-from config import TICKER
 
-def get_fundamentals():
-    stock = yf.Ticker(TICKER)
-    info = stock.info
+def get_fundamentals(ticker: str):
+    stock = yf.Ticker(ticker)
+    info  = stock.info
 
-    fundamentals = {
+    return {
         "EPS"           : info.get("trailingEps", 0),
         "ROE"           : info.get("returnOnEquity", 0),
         "ROA"           : info.get("returnOnAssets", 0),
@@ -15,9 +14,6 @@ def get_fundamentals():
         "MarketCap"     : info.get("marketCap", 0),
         "DividendYield" : info.get("dividendYield", 0) or 0,
     }
-
-    print("📊 Fundamentals fetched!")
-    return fundamentals
 
 def add_fundamentals(df, fundamentals):
     for key, value in fundamentals.items():

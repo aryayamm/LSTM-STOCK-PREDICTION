@@ -101,7 +101,14 @@ def analyze_sentiment(headlines, label=""):
     normalized = (avg_score + 1) / 2
     return normalized, results
 
-def get_news_sentiment():
+# change function signature
+def get_news_sentiment(ticker: str = "BBRI.JK"):
+    ticker_name = ticker.replace(".JK", "")
+
+    LOCAL_QUERIES = [
+        f"https://news.google.com/rss/search?q={ticker_name}+stock&hl=en-US&gl=US&ceid=US:en",
+        f"https://news.google.com/rss/search?q={ticker_name}+saham+indonesia&hl=id&gl=ID&ceid=ID:id",
+    ]
     print("Fetching local BBRI news...")
     local_headlines = fetch_headlines(LOCAL_QUERIES, label="LOCAL")
     local_score, local_results = analyze_sentiment(local_headlines, label="local")

@@ -1,5 +1,6 @@
-TICKER = "BBRI.JK"
+TICKER      = "BBRI.JK"           # default single ticker
 TICKER_NAME = "BBRI Bank Rakyat Indonesia"
+TICKERS     = ["BBRI.JK", "BBCA.JK", "BMRI.JK", "TLKM.JK"]
 PERIOD = "2y"
 LOOK_BACK = 60
 EPOCHS = 50
