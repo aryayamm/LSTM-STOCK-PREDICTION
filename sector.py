@@ -4,13 +4,9 @@ from config import PERIOD
 
 SECTOR_TICKERS = {
     "IHSG" : "^JKSE",
-    "BBCA" : "BBCA.JK",
-    "BBNI" : "BBNI.JK",
-    "BMRI" : "BMRI.JK",
-    "BBRI" : "BBRI.JK",
 }
 
-BANK_NAMES = ["BBCA", "BBNI", "BMRI", "BBRI"]
+BANK_NAMES = []
 
 def get_sector_data(df_index):
     print("Fetching sector data...")

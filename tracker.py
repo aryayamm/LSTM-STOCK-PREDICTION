@@ -39,19 +39,22 @@ def save_prediction(ticker, result):
         ))
         print("  ✅ Prediction updated!")
     else:
+        # In save_prediction, add to INSERT:
         c.execute("""
             INSERT INTO predictions (
                 date, ticker, predicted_price, direction, change_predicted,
                 rsi, macd, ma7, ma30,
                 eps, roe, roa, der, pbv, per, market_cap, dividend_yield,
-                sentiment_score, local_sentiment, macro_sentiment, final_sentiment
-            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                sentiment_score, local_sentiment, macro_sentiment, final_sentiment,
+                decision, confidence
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             today, ticker, to_float(result["predicted_price"]), result["direction"], to_float(result["change"]),
             to_float(t["rsi"]), to_float(t["macd"]), to_float(t["ma7"]), to_float(t["ma30"]),
             to_float(f["EPS"]), to_float(f["ROE"]), to_float(f["ROA"]), to_float(f["DER"]),
             to_float(f["PBV"]), to_float(f["PER"]), to_float(f["MarketCap"]), to_float(f["DividendYield"]),
-            to_float(s["score"]), s["local_label"], s["macro_label"], s["final_label"]
+            to_float(s["score"]), s["local_label"], s["macro_label"], s["final_label"],
+            result.get("decision", "NO_TRADE"), to_float(result.get("confidence", 0))
         ))
         print("  ✅ Prediction saved!")
 
@@ -71,6 +74,7 @@ def save_prediction(ticker, result):
     conn.close()
 
 def update_actual(ticker, actual_price):
+    actual_price = to_float(actual_price)  # ← add this line at the top
     conn = get_conn()
     c    = conn.cursor()
 

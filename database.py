@@ -23,12 +23,10 @@ def init_db():
             change_predicted  REAL,
             change_actual     REAL,
             correct           INTEGER,
-            -- technical
             rsi               REAL,
             macd              REAL,
             ma7               REAL,
             ma30              REAL,
-            -- fundamental
             eps               REAL,
             roe               REAL,
             roa               REAL,
@@ -37,12 +35,12 @@ def init_db():
             per               REAL,
             market_cap        REAL,
             dividend_yield    REAL,
-            -- sentiment
             sentiment_score   REAL,
             local_sentiment   TEXT,
             macro_sentiment   TEXT,
             final_sentiment   TEXT,
-            -- timestamps
+            decision          TEXT,
+            confidence        REAL,
             created_at        TIMESTAMPTZ DEFAULT NOW()
         )
     """)
@@ -56,6 +54,32 @@ def init_db():
             headline   TEXT,
             sentiment  TEXT,
             created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS paper_trades (
+            id            INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            date          TEXT,
+            ticker        TEXT,
+            decision      TEXT,
+            confidence    REAL,
+            entry_price   REAL,
+            exit_price    REAL,
+            pnl_pct       REAL,
+            pnl_rp        REAL,
+            capital_after REAL,
+            correct       INTEGER,
+            created_at    TIMESTAMPTZ DEFAULT NOW()
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS paper_portfolio (
+            id          INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            ticker      TEXT UNIQUE,
+            capital     REAL,
+            updated_at  TIMESTAMPTZ DEFAULT NOW()
         )
     """)
 

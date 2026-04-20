@@ -1,17 +1,48 @@
 import warnings
 warnings.filterwarnings("ignore")
 
-from config import TICKER
+from config import TICKER, TICKERS
 from predictor import run_prediction
 from notif import send_whatsapp
 from database import init_db
 from tracker import save_prediction, update_actual, get_accuracy_summary, get_history
+from paper_trading import record_trade, get_portfolio_summary
 
-def format_message(result, accuracy, history) -> str:
+def already_ran_today(ticker):
+    from database import get_conn
+    from datetime import datetime
+    try:
+        conn = get_conn()
+        c = conn.cursor()
+        today = datetime.now().strftime("%Y-%m-%d")
+        c.execute("SELECT id FROM predictions WHERE date = %s AND ticker = %s", (today, ticker))
+        result = c.fetchone()
+        conn.close()
+        return result is not None
+    except:
+        return False
+
+def format_message(result, accuracy, history, portfolio) -> str:
     t  = result["technical"]
     f  = result["fundamental"]
     s  = result["sentiment"]
-    ticker = result["ticker"]
+    ticker   = result["ticker"]
+    decision = result["decision"]
+    conf     = result["confidence"]
+
+    if decision == "NO_TRADE":
+        buy_prob  = result['probs'].get('BUY', 0)
+        sell_prob = result['probs'].get('SELL', 0)
+        if buy_prob > sell_prob:
+            decision_str = f"🟡 NO TRADE — BUY signal too weak ({buy_prob:.0%}, need 70%)"
+        elif sell_prob > buy_prob:
+            decision_str = f"🟡 NO TRADE — SELL signal too weak ({sell_prob:.0%}, need 70%)"
+        else:
+            decision_str = f"🟡 NO TRADE (uncertain)"
+    elif decision == "BUY":
+        decision_str = f"🟢 BUY (conf: {conf:.0%})"
+    else:
+        decision_str = f"🔴 SELL (conf: {conf:.0%})"
 
     direction_emoji = "🟢 UP" if result["direction"] == "UP" else "🔴 DOWN" if result["direction"] == "DOWN" else "🟡 SIDEWAYS"
 
@@ -37,14 +68,31 @@ def format_message(result, accuracy, history) -> str:
             tick = "✅" if correct else "❌"
             history_text += f"• {date} | Pred: Rp {pred:,.0f} | Actual: Rp {actual:,.0f} {tick}\n"
 
+    # Portfolio summary
+    if portfolio:
+        port_text = f"""💼 Paper Portfolio
+- Capital      : Rp {portfolio['capital']:,.0f}
+- Value        : Rp {portfolio['total_value']:,.0f}
+- PnL          : {portfolio['total_pnl']:+.2f}%
+- Total trades : {portfolio['total_trades']}
+- Win rate     : {portfolio['win_rate']:.1f}%"""
+    else:
+        port_text = "💼 Paper Portfolio : No trades yet"
+
     div = f["DividendYield"]
     div_display = div / 100 if div > 1 else div
 
-    return f"""🤖 LSTM Stock Prediction
-📊 {ticker} (BBRI)
+    return f"""🤖 LSTM + XGBoost Prediction
+📊 {ticker}
+
+🎯 TRADING SIGNAL
+{decision_str}
+- BUY    : {result['probs'].get('BUY', 0):.0%}
+- SELL   : {result['probs'].get('SELL', 0):.0%}
+- SKIP   : {result['probs'].get('NO_TRADE', 0):.0%}
 
 📍 Current Price  : Rp {result['current_price']:,.0f}
-🔮 Predicted Price: Rp {result['predicted_price']:,.0f}
+🔮 LSTM Predicted : Rp {result['predicted_price']:,.0f}
 📈 Direction      : {direction_emoji}
 📉 Change         : {result['change']:+.2f}%
 
@@ -57,12 +105,11 @@ def format_message(result, accuracy, history) -> str:
 - EPS    : {f['EPS']}
 - ROE    : {f['ROE']:.2%}
 - ROA    : {f['ROA']:.2%}
-- DER    : {f['DER']}
 - PBV    : {f['PBV']:.2f}
 - PER    : {f['PER']:.2f}
 - Div    : {div_display:.2%}
 
-🌏 Sector Performance
+🌏 Sector
 {sector_text}
 📰 Local News : {s['local_label']}
 {local_news_text}
@@ -72,7 +119,9 @@ def format_message(result, accuracy, history) -> str:
 
 🎯 Overall Sentiment : {s['final_label']}
 
-📊 Prediction History (last 7 days)
+{port_text}
+
+📊 Prediction History
 {history_text}
 {accuracy_text}
 
@@ -80,27 +129,42 @@ def format_message(result, accuracy, history) -> str:
 
 def main():
     print("=" * 40)
-    print("🚀 Starting LSTM Stock Predictor")
+    print("🚀 Starting LSTM + XGBoost Predictor")
     print("=" * 40)
 
-    print("\n[0/3] 🗄️  Initializing database...")
+    print("\n[0/4] 🗄️  Initializing database...")
     init_db()
 
-    print("\n[1/3] 🤖 Running prediction...")
-    result = run_prediction(TICKER)
-    print("      ✅ Done!")
+    for ticker in TICKERS:
+        print(f"\n{'='*40}")
+        print(f"📊 Processing {ticker}...")
 
-    print("\n[2/3] 🗄️  Saving to database...")
-    update_actual(TICKER, result["current_price"])
-    save_prediction(TICKER, result)  # ← pass full result now
-    accuracy = get_accuracy_summary(TICKER)
-    history  = get_history(TICKER, limit=7)
-    print("      ✅ Done!")
+        if already_ran_today(ticker):
+            print(f"  ✅ Already ran today, skipping!")
+            continue
 
-    print("\n[3/3] 📲 Sending WhatsApp...")
-    message = format_message(result, accuracy, history)
-    print(message)
-    send_whatsapp(message)
+        print("\n[1/4] 🤖 Running prediction...")
+        result = run_prediction(ticker)
+        print("      ✅ Done!")
+
+        print("\n[2/4] 🗄️  Saving to database...")
+        update_actual(ticker, result["current_price"])
+        save_prediction(ticker, result)
+        accuracy = get_accuracy_summary(ticker)
+        history  = get_history(ticker, limit=7)
+        print("      ✅ Done!")
+
+        print("\n[3/4] 💼 Recording paper trade...")
+        record_trade(ticker, result)
+        portfolio = get_portfolio_summary(ticker)
+        print("      ✅ Done!")
+
+        print("\n[4/4] 📲 Sending WhatsApp...")
+        message = format_message(result, accuracy, history, portfolio)
+        print(message)
+        send_whatsapp(message)
+        print("      ✅ Done!")
+
     print("\n✅ All done!")
     print("=" * 40)
 
