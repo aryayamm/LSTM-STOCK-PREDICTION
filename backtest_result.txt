@@ -2,44 +2,44 @@
 ==================================================
 BBRI.JK — Hold 1d
 ==================================================
-Total days         : 62
-Trades taken       : 27
-Skipped            : 35
-Direction accuracy : 51.9%
-BUY accuracy       : 45.5%
-SELL accuracy      : 56.2%
-Win rate           : 59.3%
+Total days         : 69
+Trades taken       : 21
+Skipped            : 48
+Direction accuracy : 61.9%
+BUY accuracy       : 60.0%
+SELL accuracy      : 63.6%
+Win rate           : 66.7%
 Stop loss hits     : 1
 Avg hold days      : 1.0
-Total PnL          : +21.23%
-Avg PnL per trade  : +0.79%
+Total PnL          : +19.39%
+Avg PnL per trade  : +0.92%
 
 ==================================================
 BBCA.JK — Hold 1d
 ==================================================
 Total days         : 79
-Trades taken       : 10
-Skipped            : 69
-Direction accuracy : 80.0%
-BUY accuracy       : 85.7%
-SELL accuracy      : 66.7%
-Win rate           : 90.0%
+Trades taken       : 11
+Skipped            : 68
+Direction accuracy : 72.7%
+BUY accuracy       : 71.4%
+SELL accuracy      : 75.0%
+Win rate           : 81.8%
 Stop loss hits     : 0
 Avg hold days      : 1.0
-Total PnL          : +14.74%
-Avg PnL per trade  : +1.47%
+Total PnL          : +15.41%
+Avg PnL per trade  : +1.40%
 
 ==================================================
 BMRI.JK — Hold 1d
 ==================================================
 Total days         : 61
-Trades taken       : 28
-Skipped            : 33
-Direction accuracy : 42.9%
+Trades taken       : 29
+Skipped            : 32
+Direction accuracy : 48.3%
 BUY accuracy       : 66.7%
-SELL accuracy      : 40.0%
-Win rate           : 53.6%
+SELL accuracy      : 46.2%
+Win rate           : 58.6%
 Stop loss hits     : 3
 Avg hold days      : 1.0
-Total PnL          : +12.53%
-Avg PnL per trade  : +0.45%
+Total PnL          : +14.05%
+Avg PnL per trade  : +0.48%

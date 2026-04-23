@@ -17,12 +17,14 @@ LSTM_FEATURES = [
     "BB_upper", "BB_lower", "BB_width",
     "ROC5", "ROC10",
     "Daily_Return",
-    "IHSG_Return",     "IHSG_MA7",     "IHSG_MA30",
-    "Nikkei_Return",   "Nikkei_MA7",   "Nikkei_MA30",
-    "KOSPI_Return",    "KOSPI_MA7",    "KOSPI_MA30",
-    "HangSeng_Return", "HangSeng_MA7", "HangSeng_MA30",
-    "SGX_Return",      "SGX_MA7",      "SGX_MA30",
+    "FearGreed",           # ← new
+    "IHSG_Return",    "IHSG_MA7",    "IHSG_MA30",
+    "Nikkei_Return",  "Nikkei_MA7",  "Nikkei_MA30",
+    "KOSPI_Return",   "KOSPI_MA7",   "KOSPI_MA30",
+    "HangSeng_Return","HangSeng_MA7","HangSeng_MA30",
+    "SGX_Return",     "SGX_MA7",     "SGX_MA30",
 ]
+
 def build_lstm(input_shape):
     model = Sequential([
         LSTM(128, return_sequences=True, input_shape=input_shape),

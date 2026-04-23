@@ -11,6 +11,7 @@ XGB_FEATURES_WITH_FUNDAMENTALS = [
     "Price_MA7_dist", "Price_MA30_dist",
     "EPS", "ROE", "ROA", "PBV", "PER", "DividendYield",
     "Sentiment",
+    "FearGreed", 
     "IHSG_Return",
     "Nikkei_Return", "Nikkei_MA7",
     "KOSPI_Return", "KOSPI_MA7",

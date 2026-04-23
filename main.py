@@ -29,6 +29,11 @@ def format_message(result, accuracy, history, portfolio) -> str:
     ticker   = result["ticker"]
     decision = result["decision"]
     conf     = result["confidence"]
+    fg       = result.get("fear_greed", {})
+    fg_value = fg.get("value", 50)
+    fg_label = fg.get("label", "Neutral")
+    fg_trend = fg.get("trend", "neutral")
+    fg_emoji = "🟢" if fg_value > 60 else "🔴" if fg_value < 40 else "🟡"
 
     if decision == "NO_TRADE":
         buy_prob  = result['probs'].get('BUY', 0)
@@ -116,6 +121,9 @@ def format_message(result, accuracy, history, portfolio) -> str:
 {macro_news_text}
 
 🎯 Overall Sentiment : {s['final_label']}
+
+😱 Fear & Greed  : {fg_emoji} {fg_value}/100 ({fg_label})
+   5d Avg        : {fg.get('avg_5d', 50):.0f} — {fg_trend}
 
 {port_text}
 

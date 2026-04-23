@@ -1,11 +1,9 @@
 import numpy as np
 import pandas as pd
 import warnings
-warnings.filterwarnings("ignore")
 import os
 import sys
 import io
-sys.stdout = io.open("backtest_output.txt", "w", encoding="utf-8")
 
 from technical import get_data
 from fundamental import get_fundamentals, add_fundamentals
@@ -13,6 +11,10 @@ from sector import get_sector_data, add_sector
 from lstm_signal import train_lstm, get_lstm_signals, LSTM_FEATURES
 from xgb_decision import train_xgboost, get_xgb_decision, get_xgb_features
 from config import LOOK_BACK
+from fear_greed import get_fear_greed_history
+
+warnings.filterwarnings("ignore")
+sys.stdout = io.open("backtest_output.txt", "w", encoding="utf-8")
 
 # ── CONFIG ────────────────────────────────────────
 BACKTEST_TICKERS     = ["BBRI.JK", "BBCA.JK", "BMRI.JK"]
@@ -35,13 +37,24 @@ def run_ensemble_backtest(BACKTEST_TICKER, HOLD_DAYS):
     df = add_fundamentals(df, fundamentals)
     sector_df = get_sector_data(df.index)
     df = add_sector(df, sector_df)
-    df["Sentiment"] = 0.5
-    # After get_sector_data, before training — shift Asian indices
+
+    # Shift Asian indices by 1 day (fix data leakage)
     for name in ["Nikkei", "KOSPI", "HangSeng", "SGX"]:
         for suffix in ["_Return", "_MA7", "_MA30"]:
             col = f"{name}{suffix}"
             if col in df.columns:
                 df[col] = df[col].shift(1)
+
+    df["Sentiment"] = 0.5
+
+    # Fear & Greed historical data
+    fg_history = get_fear_greed_history(days=len(df) + 10)
+    df["FearGreed"] = df.index.map(
+        lambda x: fg_history.get(
+            (x.tz_convert(None) if x.tzinfo else x).strftime("%Y-%m-%d"),
+            0.5
+        )
+    )
 
     df.dropna(inplace=True)
     print(f"  ✅ Total rows: {len(df)}")

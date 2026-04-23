@@ -8,6 +8,7 @@ import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
 from config import LOOK_BACK
+from fear_greed import get_fear_greed
 
 CONFIDENCE_THRESHOLD = 0.70
 
@@ -29,6 +30,9 @@ def run_prediction(ticker: str) -> dict:
     df = add_sentiment(df, final_score)
 
     df.dropna(inplace=True)
+
+    #fear n greed
+    fg = get_fear_greed()
 
     # 5. Train LSTM
     print("Training LSTM...")
@@ -72,17 +76,18 @@ def run_prediction(ticker: str) -> dict:
     return {
         "ticker"          : ticker,
         "current_price"   : current_price,
-        "predicted_price" : predicted_price,
+        "predicted_price" : pred_price,
         "direction"       : lstm_direction,
         "change"          : change,
         "decision"        : decision,
         "confidence"      : float(confidence),
         "probs"           : {k: float(v) for k, v in probs.items()},
+        "fear_greed"      : fg,
         "technical": {
-            "rsi"  : float(df["RSI"].iloc[-1]),
-            "macd" : float(df["MACD"].iloc[-1]),
-            "ma7"  : float(df["MA7"].iloc[-1]),
-            "ma30" : float(df["MA30"].iloc[-1]),
+            "rsi"  : float(last_row["RSI"]),
+            "macd" : float(last_row["MACD"]),
+            "ma7"  : float(last_row["MA7"]),
+            "ma30" : float(last_row["MA30"]),
         },
         "fundamental" : fundamentals,
         "sector"      : sector_summary,
