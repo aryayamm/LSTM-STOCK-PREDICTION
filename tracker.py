@@ -74,12 +74,12 @@ def save_prediction(ticker, result):
     conn.close()
 
 def update_actual(ticker, actual_price):
-    actual_price = to_float(actual_price)  # ← add this line at the top
+    actual_price = to_float(actual_price)
     conn = get_conn()
     c    = conn.cursor()
 
     c.execute("""
-        SELECT id, predicted_price, direction
+        SELECT id, predicted_price, direction, actual_price
         FROM predictions
         WHERE ticker = %s AND actual_price IS NULL
         ORDER BY date DESC LIMIT 1
@@ -91,11 +91,21 @@ def update_actual(ticker, actual_price):
         conn.close()
         return None
 
-    pred_id         = row[0]
+    pred_id        = row[0]
     predicted_price = row[1]
     pred_direction  = row[2]
 
-    change_actual    = ((actual_price - predicted_price) / predicted_price) * 100
+    # Get previous day's actual price to calculate real direction
+    c.execute("""
+        SELECT actual_price FROM predictions
+        WHERE ticker = %s AND actual_price IS NOT NULL
+        ORDER BY date DESC LIMIT 1
+    """, (ticker,))
+    prev = c.fetchone()
+    prev_price = prev[0] if prev else predicted_price
+
+    # Direction based on prev day close → today close
+    change_actual    = ((actual_price - prev_price) / prev_price) * 100
     actual_direction = "UP" if change_actual > 0.1 else "DOWN" if change_actual < -0.1 else "SIDEWAYS"
     correct          = 1 if actual_direction == pred_direction else 0
 
@@ -107,7 +117,7 @@ def update_actual(ticker, actual_price):
 
     conn.commit()
     conn.close()
-    print("  ✅ Actual price updated!")
+    print(f"  ✅ Actual updated — direction: {actual_direction}, correct: {correct}")
     return correct
 
 def get_accuracy_summary(ticker):

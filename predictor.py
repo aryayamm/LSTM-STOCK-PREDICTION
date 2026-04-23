@@ -3,10 +3,11 @@ from fundamental import get_fundamentals, add_fundamentals
 from sentiment import get_news_sentiment, add_sentiment
 from sector import get_sector_data, add_sector, get_sector_summary
 from lstm_signal import train_lstm, get_lstm_signals, LSTM_FEATURES
-from xgb_decision import train_xgboost, get_xgb_decision, XGB_FEATURES
+from xgb_decision import train_xgboost, get_xgb_decision, get_xgb_features
 import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
+from config import LOOK_BACK
 
 CONFIDENCE_THRESHOLD = 0.70
 
@@ -31,26 +32,27 @@ def run_prediction(ticker: str) -> dict:
 
     # 5. Train LSTM
     print("Training LSTM...")
-    from config import LOOK_BACK
-    lstm_model, lstm_scaler, close_scaler = train_lstm(df)
+
+    lstm_model, lstm_scaler = train_lstm(df)
+    signals = get_lstm_signals(df, lstm_model, lstm_scaler)
 
     # 6. Generate LSTM signals
     print("Generating LSTM signals...")
-    signals = get_lstm_signals(df, lstm_model, lstm_scaler, close_scaler)
+    signals = get_lstm_signals(df, lstm_model, lstm_scaler)
     signal_df = pd.DataFrame(signals, index=df.index[LOOK_BACK:])
     df = df.join(signal_df)
     df.dropna(subset=["lstm_pred_price"], inplace=True)
 
     # 7. Train XGBoost
     print("Training XGBoost...")
-    xgb_model, le = train_xgboost(df)
+    xgb_model, le, features = train_xgboost(df, ticker)
 
     # 8. Get final decision
     last_row = df.iloc[-1]
     current_price  = float(last_row["Close"])
     predicted_price = float(last_row["lstm_pred_price"])
 
-    decision, confidence, probs = get_xgb_decision(last_row, xgb_model, le)
+    decision, confidence, probs = get_xgb_decision(last_row, xgb_model, le, features)
 
 # Fix: if BUY or SELL is highest but below threshold → NO TRADE
     if decision != "NO_TRADE" and confidence < CONFIDENCE_THRESHOLD:

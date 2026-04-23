@@ -1,16 +1,16 @@
 import warnings
 warnings.filterwarnings("ignore")
+import yfinance as yf
+from datetime import datetime
 
 from config import TICKER, TICKERS
 from predictor import run_prediction
 from notif import send_whatsapp
-from database import init_db
+from database import init_db, get_conn
 from tracker import save_prediction, update_actual, get_accuracy_summary, get_history
 from paper_trading import record_trade, get_portfolio_summary
 
 def already_ran_today(ticker):
-    from database import get_conn
-    from datetime import datetime
     try:
         conn = get_conn()
         c = conn.cursor()
@@ -68,12 +68,10 @@ def format_message(result, accuracy, history, portfolio) -> str:
             tick = "✅" if correct else "❌"
             history_text += f"• {date} | Pred: Rp {pred:,.0f} | Actual: Rp {actual:,.0f} {tick}\n"
 
-    # Portfolio summary
     if portfolio:
         port_text = f"""💼 Paper Portfolio
 - Capital      : Rp {portfolio['capital']:,.0f}
-- Value        : Rp {portfolio['total_value']:,.0f}
-- PnL          : {portfolio['total_pnl']:+.2f}%
+- Total PnL    : {portfolio['total_pnl']:+.2f}%
 - Total trades : {portfolio['total_trades']}
 - Win rate     : {portfolio['win_rate']:.1f}%"""
     else:
@@ -128,42 +126,62 @@ def format_message(result, accuracy, history, portfolio) -> str:
 ⚠️ Not financial advice!"""
 
 def main():
+    now = datetime.now()
     print("=" * 40)
-    print("🚀 Starting LSTM + XGBoost Predictor")
+    print(f"🚀 LSTM + XGBoost Predictor — {now.strftime('%H:%M:%S')}")
     print("=" * 40)
 
-    print("\n[0/4] 🗄️  Initializing database...")
+    print("\n[0] 🗄️  Initializing database...")
     init_db()
 
     for ticker in TICKERS:
         print(f"\n{'='*40}")
         print(f"📊 Processing {ticker}...")
 
-        if already_ran_today(ticker):
-            print(f"  ✅ Already ran today, skipping!")
-            continue
+        if now.hour < 16:
+            # ── MORNING MODE — predict ──────────────
+            print("  🌅 Morning run — predicting...")
 
-        print("\n[1/4] 🤖 Running prediction...")
-        result = run_prediction(ticker)
-        print("      ✅ Done!")
+            if already_ran_today(ticker):
+                print(f"  ✅ Already predicted today, skipping!")
+                continue
 
-        print("\n[2/4] 🗄️  Saving to database...")
-        update_actual(ticker, result["current_price"])
-        save_prediction(ticker, result)
-        accuracy = get_accuracy_summary(ticker)
-        history  = get_history(ticker, limit=7)
-        print("      ✅ Done!")
+            print("\n  [1] 🤖 Running prediction...")
+            result = run_prediction(ticker)
+            print("      ✅ Done!")
 
-        print("\n[3/4] 💼 Recording paper trade...")
-        record_trade(ticker, result)
-        portfolio = get_portfolio_summary(ticker)
-        print("      ✅ Done!")
+            print("\n  [2] 🗄️  Saving to database...")
+            save_prediction(ticker, result)
+            accuracy  = get_accuracy_summary(ticker)
+            history   = get_history(ticker, limit=7)
+            print("      ✅ Done!")
 
-        print("\n[4/4] 📲 Sending WhatsApp...")
-        message = format_message(result, accuracy, history, portfolio)
-        print(message)
-        send_whatsapp(message)
-        print("      ✅ Done!")
+            print("\n  [3] 💼 Recording paper trade...")
+            record_trade(ticker, result)
+            portfolio = get_portfolio_summary(ticker)
+            print("      ✅ Done!")
+
+            print("\n  [4] 📲 Sending WhatsApp...")
+            message = format_message(result, accuracy, history, portfolio)
+            print(message)
+            send_whatsapp(message)
+            print("      ✅ Done!")
+
+        else:
+            # ── AFTERNOON MODE — update actual ──────
+            print("  🌆 Afternoon run — updating actual price...")
+
+            try:
+                stock        = yf.Ticker(ticker)
+                hist         = stock.history(period="1d")
+                actual_price = float(hist["Close"].iloc[-1])
+                update_actual(ticker, actual_price)
+
+                # Send confirmation WhatsApp
+                send_whatsapp(f"📊 {ticker}\n✅ Actual price updated: Rp {actual_price:,.0f}")
+                print(f"  ✅ Actual price: Rp {actual_price:,.0f}")
+            except Exception as e:
+                print(f"  ❌ Failed to update actual: {e}")
 
     print("\n✅ All done!")
     print("=" * 40)
