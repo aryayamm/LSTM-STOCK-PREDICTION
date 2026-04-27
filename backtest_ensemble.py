@@ -1,7 +1,13 @@
+import os
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["HF_HUB_DISABLE_IMPLICIT_TOKEN"] = "1"
+os.environ["PYTHONWARNINGS"] = "ignore"
+
 import numpy as np
 import pandas as pd
 import warnings
-import os
 import sys
 import io
 
@@ -17,7 +23,8 @@ warnings.filterwarnings("ignore")
 sys.stdout = io.open("backtest_output.txt", "w", encoding="utf-8")
 
 # ── CONFIG ────────────────────────────────────────
-BACKTEST_TICKERS     = ["BBRI.JK", "BBCA.JK", "BMRI.JK"]
+# BACKTEST_TICKERS     = ["BBRI.JK", "BBCA.JK", "BMRI.JK", "ANTM.JK", ]
+BACKTEST_TICKERS     = ["BBRI.JK"]
 HOLD_DAYS_LIST       = [1]
 BACKTEST_DAYS        = 90
 CONFIDENCE_THRESHOLD = 0.70

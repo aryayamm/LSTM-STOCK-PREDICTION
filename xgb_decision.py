@@ -32,6 +32,9 @@ XGB_FEATURES_NO_FUNDAMENTALS = [
     "HangSeng_Return", "HangSeng_MA7",
     "SGX_Return", "SGX_MA7",
     "lstm_pred_price", "lstm_price_change", "lstm_momentum", "lstm_trend",
+    # THIS ONE BUR
+    # "FearGreed", 
+    # "EPS", "ROE", "ROA", "PBV", "PER", "DividendYield",
 ]
 
 # Tickers that benefit from fundamentals

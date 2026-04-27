@@ -76,7 +76,7 @@ def run_prediction(ticker: str) -> dict:
     return {
         "ticker"          : ticker,
         "current_price"   : current_price,
-        "predicted_price" : pred_price,
+        "predicted_price" : predicted_price,
         "direction"       : lstm_direction,
         "change"          : change,
         "decision"        : decision,

@@ -1,8 +1,15 @@
+import os
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["HF_HUB_DISABLE_IMPLICIT_TOKEN"] = "1"
+os.environ["PYTHONWARNINGS"] = "ignore"
+
 import warnings
 warnings.filterwarnings("ignore")
+
 import yfinance as yf
 from datetime import datetime
-
 from config import TICKER, TICKERS
 from predictor import run_prediction
 from notif import send_whatsapp
